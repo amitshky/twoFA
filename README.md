@@ -10,6 +10,7 @@ This project implements Time-based OTP (TOTP) verification. You can generate a s
 * [ts-node](https://www.npmjs.com/package/ts-node)
 
 ### Installation
+(Type these commands by opening the command prompt (for windows) in the root directory of this repository)\
 Install project packages
 ```
 npm install
