@@ -3,9 +3,11 @@ import express   from 'express'
 import qrcode    from 'qrcode'
 
 
+const secretKey: string =  'OM4EU4DLNUVGCTROG4QUST3MM52SCRLPGJYHCPRQN45UCYJOKAQQ';  // TODO: store this in an env variable
+
 const app: express.Application = express();
 
-app.use(express.static('./public/'));     // static assets
+app.use(express.static('./public/'));            // static assets
 app.use(express.urlencoded({ extended: true })); // parse data
 app.use(express.json());                         // parse json
 
@@ -37,7 +39,7 @@ app.post('/totp/validate', (req: express.Request, res: express.Response) =>
 		return res.status(401).json({ success: false, message: 'Please provide a token'});
 
 	const verified: boolean = speakeasy.totp.verify({
-		secret: 'OM4EU4DLNUVGCTROG4QUST3MM52SCRLPGJYHCPRQN45UCYJOKAQQ', // TODO: store this in an env variable
+		secret: secretKey,
 		encoding: 'base32',
 		token: token
 	});
