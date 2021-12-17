@@ -28,9 +28,9 @@ You can then open your browser run the localhost on port 5000
 ```localhost:5000```
 
 ## Output
-Run the code and go to localhost on port 5000 (`localhost:5000`) in your browser, you will see a basic HTML form where you can enter the TOTP token (code). Click on the Next button (or press Enter) to check for verification.
+* Run the code and go to localhost on port 5000 (`localhost:5000`) in your browser, you will see a basic HTML form where you can enter the TOTP token (code). Click on the Next button (or press Enter) to check for verification.
 
-To generate your secret key, go to the url `localhost:5000/totp/generate`. You should see a QR code along with a secret key (base32 encoded). Scan the QR code with TOTP generation app or type out the key to set up. 
+* To generate your secret key, go to the url `localhost:5000/totp/generate`. You should see a QR code along with a secret key (base32 encoded). Scan the QR code with TOTP generation app or type out the key to set up. 
 
 ### Screenshots
 
