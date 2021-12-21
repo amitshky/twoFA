@@ -25,7 +25,7 @@ OR you can run the code without generating js files (runs nodemon for `src/app.t
 ```
 npm run dev
 ```
-You can then open your browser run the localhost on port 5000
+You can then open your browser, and run the localhost on port 5000
 ```localhost:5000```
 
 ## Output
