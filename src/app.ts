@@ -1,26 +1,30 @@
-import express from 'express'
-import speakeasy from 'speakeasy'
-import qrcode from 'qrcode'
-import * as uuid from 'uuid'
+import express from 'express';
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
+import * as uuid from 'uuid';
 
-import { JsonDB } from 'node-json-db'
-import { Config } from 'node-json-db/dist/lib/JsonDBConfig'
+import { JsonDB } from 'node-json-db';
+import { Config } from 'node-json-db/dist/lib/JsonDBConfig';
 
+import dotenv from 'dotenv';
+dotenv.config();
 
-const secretKey: string = 'OM4EU4DLNUVGCTROG4QUST3MM52SCRLPGJYHCPRQN45UCYJOKAQQ';  // TODO: store this in an env variable
+// user credentials
+const SECRET_KEY: string = process.env.SECRET_KEY!;
+const USERNAME:  string = process.env.USERNAME!;
 
-const db = new JsonDB(new Config('db_twoFA', true, true, '/'))
+const jsondb = new JsonDB(new Config('db_twoFA', true, true, '/'));
 const app: express.Application = express();
 
-app.use(express.static('./public/'));            // static assets
+app.use(express.static('./src/public/')); // static assets
 app.use(express.urlencoded({ extended: true })); // parse data
-app.use(express.json());                         // parse json
+app.use(express.json()); // parse json
 
 app.get('/', (req: express.Request, res: express.Response) => res.status(200).sendFile('index.html'));
 
 app.get('/totp/generate', (req: express.Request, res: express.Response) =>
 {
-	const secret: speakeasy.GeneratedSecret = speakeasy.generateSecret({ name: "Skeeob" });
+	const secret: speakeasy.GeneratedSecret = speakeasy.generateSecret({ name: USERNAME });
 	qrcode.toDataURL(secret.otpauth_url!, (err: Error, data: string) => 
 	{
 		if (err)
@@ -47,7 +51,7 @@ app.post('/totp/validate', (req: express.Request, res: express.Response) =>
 		return res.status(401).json({ success: false, message: 'Please provide a token' });
 
 	const verified: boolean = speakeasy.totp.verify({
-		secret: secretKey,
+		secret: SECRET_KEY,
 		encoding: 'base32',
 		token: token
 	});
@@ -61,20 +65,14 @@ app.post('/totp/validate', (req: express.Request, res: express.Response) =>
 // Register user and generate secret key
 app.post('/register', (req: express.Request, res: express.Response) =>
 {
-	try
-	{
-		const id = uuid.v4();
-		const path = `/user/${id}`;
-		const tempSecret = speakeasy.generateSecret();
+	const { username } = req.body; // TODO: check db for uniqueness 
+	const tempSecret = speakeasy.generateSecret({ name: username });
 
-		db.push(path, { id, tempSecret });
-		return res.status(200).json({ userID: id, tempSecret: tempSecret.base32 });
-	}
-	catch (err)
-	{
-		console.log(err);
-		return res.status(500).json({ success: false, message: 'Error generating secret key!' });
-	}
+	const userID = uuid.v4();
+	const path = `/user/${userID}`;
+
+	jsondb.push(path, { userID: userID, username: username, tempSecret: tempSecret });
+	return res.status(200).json({ userID: userID, username: username, tempSecret: tempSecret });
 });
 
 // Verify the user and make the secret permanent
@@ -84,7 +82,7 @@ app.post('/verify', (req: express.Request, res: express.Response) =>
 	try 
 	{
 		const path = `/user/${userID}`;
-		const user = db.getData(path);
+		const user = jsondb.getData(path);
 		const { base32: secret } = user.tempSecret; // rename tempSecret to secret
 
 		const verified = speakeasy.totp.verify({
@@ -95,7 +93,7 @@ app.post('/verify', (req: express.Request, res: express.Response) =>
 
 		if (verified)
 		{
-			db.push(path, { id: userID, secret: user.tempSecret });
+			jsondb.push(path, { userID: userID, username: user.username, secret: user.tempSecret });
 			return res.status(200).json({ verified: true });
 		}
 		return res.status(200).json({ verified: false });
@@ -114,7 +112,7 @@ app.post('/validate', (req: express.Request, res: express.Response) =>
 	try 
 	{
 		const path = `/user/${userID}`;
-		const user = db.getData(path);
+		const user = jsondb.getData(path);
 
 		const validated = speakeasy.totp.verify({
 			secret: user.secret.base32,
@@ -130,8 +128,8 @@ app.post('/validate', (req: express.Request, res: express.Response) =>
 	catch(err)
 	{
 		console.log(err);
-		return res.status(500).json({ success: false, message: 'Unable to validate TOTP token!' });
+		return res.status(500).json({ success: false, message: 'Unable to validate user!' });
 	}
 });
 
-app.listen(5000, () => console.log('Server running on http://localhost:5000'));
+app.listen(5000, () => console.log('Listening on http://localhost:5000'));
